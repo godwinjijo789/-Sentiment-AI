@@ -44,23 +44,24 @@ html, body, [class*="css"] {font-family:'DM Sans',sans-serif;}
 .hero {padding:28px 30px;border-radius:24px;background:linear-gradient(120deg,var(--hero-start),var(--hero-end));border:1px solid var(--hero-border);margin-bottom:22px;}
 .eyebrow {color:var(--accent-color);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.16em}
 .hero h1,.result-title {font-family:'Space Grotesk',sans-serif;color:var(--heading-color)}
-.hero h1 {font-size:clamp(2rem,4vw,3.2rem);line-height:1.05;margin:10px 0}
+.hero h1 {font-size:clamp(2rem,4vw,3rem);line-height:1.05;margin:10px 0}
+.stSidebar [data-testid="stMarkdownContainer"] h2 {font-family:'Space Grotesk',sans-serif;font-size:1.5rem;line-height:1.2;margin:0;color:var(--heading-color)}
 .hero p,.muted,.result-detail {color:var(--muted-color)}
-.metric-card {padding:18px 20px;border-radius:18px;min-height:112px;background:var(--card-background);border:1px solid var(--card-border)}
-.metric-label {color:var(--label-color);font-size:.8rem;margin-bottom:8px}
-.metric-value {color:var(--heading-color);font-family:'Space Grotesk',sans-serif;font-size:1.7rem;font-weight:700}
-.metric-note {color:var(--accent-color);font-size:.76rem;margin-top:5px}
-.section-title {font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;color:var(--heading-color);margin:8px 0 4px}
-.result-box {border-radius:20px;padding:22px;margin-top:14px;background:var(--card-background);border:1px solid var(--card-border)}
+.hero p {font-size:1rem;line-height:1.6;margin-bottom:0}
 .result-title {margin:8px 0}
 .result-detail {margin:0}
 .result-score {font-size:2.5rem;margin:3px 0 8px;color:var(--heading-color)}
 .positive {border-left:5px solid #35d39a}.negative {border-left:5px solid #ff6b85}
 .small-pill {display:inline-block;padding:5px 10px;border-radius:999px;background:var(--pill-background);color:var(--pill-color);font-size:.75rem;border:1px solid var(--card-border)}
-div.stButton>button[kind="primary"],button[kind="primaryFormSubmit"] {border:0;border-radius:12px;min-height:2.9rem;background:linear-gradient(90deg,#6558f5,#258cda);color:white;font-weight:700}
-[data-testid="stMetric"] {background:var(--metric-background);padding:14px;border:1px solid var(--card-border);border-radius:16px}
-.app-footer {text-align:center;color:var(--footer-color);font-size:.8rem;padding:6px 0 18px}
+div.stButton>button[kind="primary"],button[kind="primaryFormSubmit"] {border:0;border-radius:12px;min-height:2.9rem;background:linear-gradient(90deg,#6558f5,#258cda);color:white;font-weight:700;transition:filter .15s ease,transform .15s ease}
+div.stButton>button[kind="primary"]:hover,button[kind="primaryFormSubmit"]:hover {filter:brightness(1.08);transform:translateY(-1px)}
+[data-testid="stMetric"] {background:var(--metric-background);padding:14px 16px;border:1px solid var(--card-border);border-radius:16px;height:100%}
+.app-footer {text-align:center;color:var(--footer-color);font-size:.8rem;line-height:1.2;padding:0 0 6px}
 hr {border-color:var(--card-border)}
+@media (max-width: 640px) {
+    .hero {padding:22px 20px;border-radius:18px}
+    .hero h1 {font-size:2rem}
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -86,88 +87,188 @@ if "last_result" not in st.session_state: st.session_state.last_result = None
 
 with st.sidebar:
     st.markdown("## 🧠 Sentiment AI")
-    st.markdown('<span class="small-pill">REVIEW INTELLIGENCE</span>', unsafe_allow_html=True)
-    page = st.radio("NAVIGATION", ["Dashboard", "Batch data analysis", "About the model"])
+    st.caption("Review sentiment analysis")
+    page = st.radio(
+        "Choose a page",
+        ["Dashboard", "Batch data analysis", "About the model"],
+        format_func=lambda option: {
+            "Dashboard": "Review dashboard",
+            "Batch data analysis": "Batch CSV analysis",
+            "About the model": "About",
+        }[option],
+    )
     st.divider()
-    st.caption("Model is loaded once and cached in RAM.")
-    st.caption("Public model — HF token not required.")
+    st.caption("DistilBERT · GPU when available, otherwise CPU")
 
-st.markdown("""<div class="hero"><div class="eyebrow">AI-powered text analytics</div><h1>Understand the feeling<br>behind every review.</h1><p>Analyse text with a transformer-based sentiment model. View predictions, confidence scores, system RAM, and session insights.</p></div>""", unsafe_allow_html=True)
+st.markdown(
+    """<div class="hero"><div class="eyebrow">AI-powered text analytics</div><h1>🧠 Sentiment AI</h1><p>Understand the feeling behind a review. Analyse one at a time or upload a CSV to explore results in bulk.</p></div>""",
+    unsafe_allow_html=True,
+)
 
 model, device_name, model_error = None, "Not loaded", None
-with st.spinner("Loading sentiment model into memory… first run may take a little longer"):
+with st.spinner("Preparing the sentiment model…"):
     try: model, device_name = load_model(MODEL_ID)
     except Exception as e: model_error = str(e)
 ram_pct, ram_used, ram_total = ram_stats()
 history = st.session_state.history
 pos_pct = (sum(x["label"] == "POSITIVE" for x in history) / len(history) * 100) if history else 0
-cols = st.columns(4)
-metrics = [("MODEL STATUS", "Ready" if model else "Needs setup", device_name), ("SYSTEM RAM USED", f"{ram_pct:.0f}%", f"{ram_used:.1f} / {ram_total:.1f} GB"), ("REVIEWS ANALYSED", str(len(history)), "This session"), ("POSITIVE SHARE", f"{pos_pct:.0f}%", "Of this session's analyses")]
-for col, (label, value, note) in zip(cols, metrics):
-    with col: st.markdown(f'<div class="metric-card"><div class="metric-label">{label}</div><div class="metric-value">{value}</div><div class="metric-note">{note}</div></div>', unsafe_allow_html=True)
+with st.container(horizontal=True):
+    st.metric(
+        "Model",
+        "Ready" if model else "Unavailable",
+        device_name,
+        delta_color="off",
+        border=True,
+    )
+    st.metric(
+        "Reviews analysed",
+        f"{len(history):,}",
+        "This session",
+        delta_color="off",
+        border=True,
+    )
+    st.metric(
+        "Positive share",
+        f"{pos_pct:.0f}%",
+        "Of this session's reviews",
+        delta_color="off",
+        border=True,
+    )
+    st.metric(
+        "System memory",
+        f"{ram_pct:.0f}%",
+        f"{ram_used:.1f} of {ram_total:.1f} GB",
+        delta_color="off",
+        border=True,
+    )
 if model_error:
-    st.error("Could not load the model. Check the package installation and restart the app.")
-    st.code(model_error)
-st.write("")
+    st.error("The sentiment model could not be loaded. Check your package installation and restart the app.")
+    with st.expander("View technical details"):
+        st.code(model_error)
 
 if page == "Dashboard":
-    left, right = st.columns([1.5, 1], gap="large")
-    with left:
-        st.markdown('<div class="section-title">✍️ Analyse a review</div><div class="muted">Type or paste a movie review, product review, comment, or short text.</div>', unsafe_allow_html=True)
-        with st.form("analysis_form"):
-            review = st.text_area("Text to analyse", placeholder="Example: The story was engaging, the acting was excellent, and I enjoyed every minute.", height=190, max_chars=5000)
-            submitted = st.form_submit_button("✨ Analyse sentiment", type="primary", use_container_width=True)
-        if submitted:
-            if not review.strip(): st.warning("Please type some text first.")
-            elif model is None: st.error("The model is not loaded. See the error above.")
-            else:
-                with st.spinner("Analysing text…"):
-                    start = time.perf_counter()
-                    pred = model(review.strip(), truncation=True, max_length=512)[0]
-                    duration = time.perf_counter() - start
-                item = {"time": datetime.now().strftime("%H:%M:%S"), "review": review.strip(), "label": pred["label"].upper(), "score": float(pred["score"]), "seconds": duration}
-                st.session_state.history.insert(0, item)
-                st.session_state.history = st.session_state.history[:100]
-                st.session_state.last_result = item
-                st.rerun()
-        result = st.session_state.last_result
-        if result:
-            good = result["label"] == "POSITIVE"
-            st.markdown(f"""<div class="result-box {'positive' if good else 'negative'}"><div class="eyebrow">Latest result</div><h2 class="result-title">{'😊 Positive sentiment' if good else '🙁 Negative sentiment'}</h2><p class="result-detail">Model confidence score</p><h1 class="result-score">{result['score']*100:.2f}%</h1><span class="small-pill">Inference time: {result['seconds']:.3f}s</span></div>""", unsafe_allow_html=True)
-            st.caption("Confidence is the model's score for its predicted class, not a guarantee of correctness.")
-    with right:
-        st.markdown('<div class="section-title">📊 Session insights</div>', unsafe_allow_html=True)
-        if history:
-            counts = pd.Series([x["label"] for x in history]).value_counts().reindex(["POSITIVE", "NEGATIVE"], fill_value=0)
-            st.bar_chart(counts, color="#6f79ff")
-            st.markdown("**Recent analyses**")
-            for item in history[:5]:
-                preview = item["review"].replace("\n", " ")
-                if len(preview) > 78: preview = preview[:75] + "..."
-                icon = "🟢" if item["label"] == "POSITIVE" else "🔴"
-                st.markdown(f"{icon} **{item['label']} · {item['score']*100:.1f}%**  \n{preview}")
+    st.subheader("Analyse a review", icon=":material/rate_review:")
+    st.caption("Paste a movie review, product review, or comment to see whether it reads as positive or negative.")
+    with st.form("analysis_form"):
+        review = st.text_area(
+            "Your review",
+            placeholder="Type or paste a review here…",
+            height=150,
+            max_chars=5000,
+            key="review_input",
+            help="Use up to 5,000 characters. Very long reviews are shortened for model input.",
+        )
+        submitted = st.form_submit_button(
+            "Analyse sentiment",
+            type="primary",
+            icon=":material/psychology:",
+            width="stretch",
+            help="Classify this review as positive or negative.",
+        )
+    if submitted:
+        if not review.strip(): st.warning("Please type some text first.")
+        elif model is None: st.error("The model is not loaded. See the error above.")
         else:
-            st.info("Your chart and recent results will appear here after the first analysis.")
-            st.markdown("**Sample text ideas**")
-            st.code("The movie was brilliant and emotionally engaging.")
-            st.code("The plot was boring and the acting was weak.")
+            with st.spinner("Analysing text…"):
+                start = time.perf_counter()
+                pred = model(review.strip(), truncation=True, max_length=512)[0]
+                duration = time.perf_counter() - start
+            item = {"time": datetime.now().strftime("%H:%M:%S"), "review": review.strip(), "label": pred["label"].upper(), "score": float(pred["score"]), "seconds": duration}
+            st.session_state.history.insert(0, item)
+            st.session_state.history = st.session_state.history[:100]
+            st.session_state.last_result = item
+            st.rerun()
+    result = st.session_state.last_result
+    if result:
+        good = result["label"] == "POSITIVE"
+        with st.container(border=True):
+            st.subheader("Latest result", icon=":material/analytics:")
+            sentiment_col, confidence_col, timing_col = st.columns(3)
+            sentiment_col.metric("Sentiment", "Positive" if good else "Negative", border=True)
+            confidence_col.metric("Confidence", f"{result['score'] * 100:.1f}%", border=True)
+            timing_col.metric("Analysis time", f"{result['seconds']:.2f}s", border=True)
+            with st.expander("Review analysed"):
+                st.text(result["review"])
+            st.caption("Confidence is the model's estimate for its prediction, not a guarantee of correctness.")
+
+    with st.container(border=True):
+        st.subheader("Session insights", icon=":material/monitoring:")
+        if history:
+            counts = pd.Series([x["label"] for x in history]).value_counts().reindex(
+                ["POSITIVE", "NEGATIVE"], fill_value=0
+            )
+            positive_count = int(counts["POSITIVE"])
+            negative_count = int(counts["NEGATIVE"])
+            positive_insight, negative_insight = st.columns(2)
+            positive_insight.metric("Positive reviews", f"{positive_count:,}", border=True)
+            negative_insight.metric("Negative reviews", f"{negative_count:,}", border=True)
+            chart_data = pd.DataFrame(
+                {"Sentiment": ["Positive", "Negative"], "Reviews": [positive_count, negative_count]}
+            )
+            st.bar_chart(
+                chart_data,
+                x="Sentiment",
+                y="Reviews",
+                color="#6f79ff",
+                height=250,
+                alt="Positive and negative reviews analysed this session",
+            )
+            st.caption(f"Based on the {len(history):,} most recent individual reviews in this session.")
+            with st.expander("Recent reviews"):
+                for item in history[:5]:
+                    sentiment = item["label"].title()
+                    st.markdown(f"**{sentiment} · {item['score'] * 100:.1f}% confidence**")
+                    preview = item["review"].replace("\n", " ")
+                    st.caption(preview if len(preview) <= 140 else f"{preview[:137]}...")
+        else:
+            st.info("Your analysis history and sentiment chart will appear here after your first review.")
 
 elif page == "Batch data analysis":
-    st.markdown('<div class="section-title">📂 Batch CSV analysis</div>', unsafe_allow_html=True)
-    st.write("Upload a CSV with a text column named `review`, `text`, `sentence`, or `comment`. For gender rates, select a gender/sex column with values such as Female/Male or F/M.")
-    file = st.file_uploader("Choose CSV file", type=["csv"])
+    st.subheader("Batch CSV analysis", icon=":material/table_chart:")
+    st.caption("Analyse reviews in bulk, explore the results, and download a CSV with predictions and summary metrics.")
+    st.markdown("**1. Upload your data**")
+    st.caption("Your CSV needs a text column named `review`, `text`, `sentence`, or `comment`. A gender column is optional.")
+    file = st.file_uploader(
+        "Choose a CSV file",
+        type=["csv"],
+        help="Upload a CSV containing reviews. You can choose the text and optional gender columns below.",
+    )
     if file:
         try:
             file_bytes = file.getvalue()
             file_id = hashlib.sha256(file_bytes).hexdigest()
             df = pd.read_csv(io.BytesIO(file_bytes))
-            st.write(f"Rows found: **{len(df):,}**")
-            st.dataframe(df, height="content", width="stretch", hide_index=True, alt="All rows in the uploaded CSV")
+            st.markdown("**2. Preview your data**")
+            preview_key = f"batch_preview_all_{file_id[:12]}"
+            if preview_key not in st.session_state:
+                st.session_state[preview_key] = False
+            preview_label = (
+                f"Showing all {len(df):,} rows"
+                if st.session_state[preview_key]
+                else f"Showing the first {min(len(df), 10):,} of {len(df):,} rows"
+            )
+            st.caption(f"{len(df):,} rows found · {preview_label}")
+            if len(df) > 10 and st.button(
+                "Show only 10 rows" if st.session_state[preview_key] else "Show all rows",
+                key=f"{preview_key}_toggle",
+            ):
+                st.session_state[preview_key] = not st.session_state[preview_key]
+            preview_df = df if st.session_state[preview_key] else df.head(10)
+            with st.container(border=True):
+                st.dataframe(
+                    preview_df,
+                    height="content",
+                    width="stretch",
+                    hide_index=True,
+                    alt="CSV preview rows",
+                )
 
             options = [c for c in df.columns if str(c).strip().casefold() in {"review", "text", "sentence", "comment"}]
             if not options:
                 st.error("No recognised text column found. Rename it to review, text, sentence, or comment.")
             else:
+                st.markdown("**3. Choose columns and analyse**")
+                st.caption("Select the text field to analyse. If present, select a gender/sex column to see results by gender.")
                 text_col = st.selectbox("Text column", options, key=f"batch_text_column_{file_id[:12]}")
                 gender_options = [None, *df.columns]
                 default_gender_index = next(
@@ -184,7 +285,15 @@ elif page == "Batch data analysis":
                 if df.empty:
                     st.info("This CSV contains column headers but no data rows.")
 
-                if st.button("Analyse CSV", type="primary", disabled=model is None or df.empty):
+                if model is None:
+                    st.warning("Analysis is unavailable because the sentiment model did not load.")
+                if st.button(
+                    "Analyse CSV",
+                    type="primary",
+                    icon=":material/psychology:",
+                    disabled=model is None or df.empty,
+                    help="Run sentiment analysis on every non-empty review in this file.",
+                ):
                     output = df.copy(); labels = []; scores = []
                     progress = st.progress(0); status = st.empty()
                     texts = output[text_col].fillna("").astype(str).tolist()
@@ -248,7 +357,7 @@ elif page == "Batch data analysis":
                     output = analysis["output"]
                     summary = analysis["summary"]
                     st.success("Analysis complete.")
-                    st.subheader("Sentiment summary")
+                    st.subheader("Sentiment summary", icon=":material/analytics:")
                     positive_delta = (
                         f"{format_percentage(summary['positive_pct'])} of classified reviews"
                         if summary["positive_pct"] is not None
@@ -284,7 +393,7 @@ elif page == "Batch data analysis":
                     )
                     st.bar_chart(chart_data, x="Sentiment", y="Reviews", alt="Positive and negative review counts")
 
-                    st.subheader("Sentiment by gender")
+                    st.subheader("Sentiment by gender", icon=":material/groups:")
                     if gender_col is None:
                         st.info("Select a gender/sex column to calculate female and male percentages.")
                     else:
@@ -310,13 +419,26 @@ elif page == "Batch data analysis":
                                     border=True,
                                 )
 
-                    st.subheader("Analysed rows")
+                    st.subheader("Analysed rows", icon=":material/table_view:")
+                    analysed_preview_key = f"batch_analysed_all_{file_id[:12]}"
+                    if analysed_preview_key not in st.session_state:
+                        st.session_state[analysed_preview_key] = False
+                    if len(output) > 10 and st.button(
+                        "Show only 10 rows"
+                        if st.session_state[analysed_preview_key]
+                        else "Show all rows",
+                        key=f"{analysed_preview_key}_toggle",
+                    ):
+                        st.session_state[analysed_preview_key] = not st.session_state[analysed_preview_key]
+                    analysed_preview = (
+                        output if st.session_state[analysed_preview_key] else output.head(10)
+                    )
                     st.dataframe(
-                        output,
+                        analysed_preview,
                         height="content",
                         width="stretch",
                         hide_index=True,
-                        alt="CSV rows with sentiment predictions and confidence scores",
+                        alt="Preview of CSV rows with sentiment predictions and confidence scores",
                     )
 
                     summary_rows = [
@@ -365,10 +487,11 @@ elif page == "Batch data analysis":
                         export_rows.append(row)
                     export = pd.concat([export, pd.DataFrame(export_rows, columns=export.columns)], ignore_index=True)
                     st.download_button(
-                        "⬇️ Download results CSV",
+                        "Download results CSV",
                         export.to_csv(index=False).encode("utf-8-sig"),
                         "sentiment_analysis_results.csv",
                         "text/csv",
+                        icon=":material/download:",
                         width="stretch",
                     )
         except Exception as e:
@@ -377,10 +500,25 @@ elif page == "Batch data analysis":
     else:
         st.session_state.pop("batch_analysis", None)
 else:
-    st.markdown('<div class="section-title">🧩 About this model</div>', unsafe_allow_html=True)
-    st.write("This app uses a pretrained DistilBERT classifier for English positive/negative sentiment.")
-    st.markdown(f"- **Model:** `{MODEL_ID}`\n- **Task:** Binary sentiment classification\n- **Output:** POSITIVE or NEGATIVE and a confidence score\n- **Runtime:** GPU when available, otherwise CPU\n- **Memory:** Model pipeline is cached in RAM\n- **Limitations:** Sarcasm, mixed opinions, very short text, and non-English inputs may be harder to classify.")
-    st.info("For a formal project report, evaluate on a labelled held-out dataset and report accuracy, precision, recall, F1-score, and a confusion matrix.")
+    st.subheader("About the model", icon=":material/psychology_alt:")
+    st.write("Sentiment AI uses a pretrained DistilBERT model to estimate whether English-language reviews express positive or negative sentiment.")
+    model_col, output_col = st.columns(2)
+    with model_col:
+        with st.container(border=True):
+            st.markdown("**Model details**")
+            st.caption("Model")
+            st.code(MODEL_ID)
+            st.markdown("- **Task:** Binary sentiment classification")
+            st.markdown(f"- **Runtime:** {device_name}")
+            st.markdown("- **Availability:** Loaded once and cached for this app session")
+    with output_col:
+        with st.container(border=True):
+            st.markdown("**Understanding predictions**")
+            st.markdown("- **Positive:** The text is predicted to express a favourable sentiment.")
+            st.markdown("- **Negative:** The text is predicted to express an unfavourable sentiment.")
+            st.markdown("- **Confidence:** The model's score for its predicted label, not a guarantee of correctness.")
+    with st.expander("Known limitations"):
+        st.write("Sarcasm, mixed opinions, very short reviews, and non-English text can be difficult for the model to classify accurately.")
+    st.info("For a formal evaluation, test against labelled data and report accuracy, precision, recall, F1-score, and a confusion matrix.")
 
-st.markdown("---")
-st.markdown('<div class="app-footer">SENTIMENT AI · Deep Learning Project · Streamlit + DistilBERT</div>', unsafe_allow_html=True)
+st.caption("Sentiment AI · Deep learning project · Streamlit + DistilBERT", text_alignment="center")

@@ -9,6 +9,8 @@ backgroundColor = "#f8fafc"
 secondaryBackgroundColor = "#eef2f8"
 textColor = "#1f2937"
 borderColor = "#d9e0eb"
+paddingTop = "0"
+paddingBottom = "0"
 chartCategoricalColors = ["#5145cd", "#0f766e", "#d97706", "#db2777", "#0284c7"]
 
 [theme.dark]
@@ -17,4 +19,6 @@ backgroundColor = "#0b1020"
 secondaryBackgroundColor = "#111831"
 textColor = "#f4f7ff"
 borderColor = "#28324c"
+paddingTop = "0"
+paddingBottom = "0"
 chartCategoricalColors = ["#8b85ff", "#35d39a", "#fbbf24", "#ff6b85", "#38bdf8"]
