@@ -16,24 +16,51 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 html, body, [class*="css"] {font-family:'DM Sans',sans-serif;}
-.stApp {background:radial-gradient(circle at 85% 0%,rgba(91,92,246,.18),transparent 28%),radial-gradient(circle at 0% 20%,rgba(27,190,190,.10),transparent 25%),#0b1020;color:#f4f7ff;}
-[data-testid="stHeader"] {background:rgba(11,16,32,.7)}
-[data-testid="stSidebar"] {background:linear-gradient(180deg,#111831,#0c1225);border-right:1px solid rgba(255,255,255,.08)}
-.hero {padding:28px 30px;border-radius:24px;background:linear-gradient(120deg,rgba(79,70,229,.32),rgba(15,184,184,.13));border:1px solid rgba(255,255,255,.12);margin-bottom:22px;}
-.eyebrow {color:#8de8e1;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.16em}
-.hero h1 {font-family:'Space Grotesk',sans-serif;font-size:clamp(2rem,4vw,3.2rem);line-height:1.05;margin:10px 0;color:#fff}
-.hero p,.muted {color:#c1cce5}
-.metric-card {padding:18px 20px;border-radius:18px;min-height:112px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.10)}
-.metric-label {color:#aab6d2;font-size:.8rem;margin-bottom:8px}
-.metric-value {color:#fff;font-family:'Space Grotesk',sans-serif;font-size:1.7rem;font-weight:700}
-.metric-note {color:#8de8e1;font-size:.76rem;margin-top:5px}
-.section-title {font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;color:#fff;margin:8px 0 4px}
-.result-box {border-radius:20px;padding:22px;margin-top:14px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12)}
+.stApp {
+    --app-background: light-dark(#f8fafc,#0b1020);
+    --body-color: light-dark(#1f2937,#f4f7ff);
+    --header-background: light-dark(rgba(248,250,252,.78),rgba(11,16,32,.7));
+    --sidebar-start: light-dark(#f1f5fb,#111831);
+    --sidebar-end: light-dark(#e9eef7,#0c1225);
+    --sidebar-border: light-dark(rgba(31,41,55,.10),rgba(255,255,255,.08));
+    --hero-start: light-dark(rgba(79,70,229,.12),rgba(79,70,229,.32));
+    --hero-end: light-dark(rgba(15,184,184,.08),rgba(15,184,184,.13));
+    --hero-border: light-dark(rgba(31,41,55,.12),rgba(255,255,255,.12));
+    --accent-color: light-dark(#0f766e,#8de8e1);
+    --heading-color: light-dark(#172033,#ffffff);
+    --muted-color: light-dark(#4b5563,#c1cce5);
+    --card-background: light-dark(rgba(255,255,255,.82),rgba(255,255,255,.055));
+    --card-border: light-dark(rgba(31,41,55,.12),rgba(255,255,255,.10));
+    --label-color: light-dark(#475569,#aab6d2);
+    --pill-background: light-dark(rgba(31,41,55,.07),rgba(255,255,255,.08));
+    --pill-color: light-dark(#334155,#d9e4ff);
+    --metric-background: light-dark(rgba(255,255,255,.72),rgba(255,255,255,.045));
+    --footer-color: light-dark(#64748b,#7785a8);
+    background:radial-gradient(circle at 85% 0%,light-dark(rgba(91,92,246,.09),rgba(91,92,246,.18)),transparent 28%),radial-gradient(circle at 0% 20%,light-dark(rgba(27,190,190,.07),rgba(27,190,190,.10)),transparent 25%),var(--app-background);
+    color:var(--body-color);
+}
+[data-testid="stHeader"] {background:var(--header-background)}
+[data-testid="stSidebar"] {background:linear-gradient(180deg,var(--sidebar-start),var(--sidebar-end));border-right:1px solid var(--sidebar-border)}
+.hero {padding:28px 30px;border-radius:24px;background:linear-gradient(120deg,var(--hero-start),var(--hero-end));border:1px solid var(--hero-border);margin-bottom:22px;}
+.eyebrow {color:var(--accent-color);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.16em}
+.hero h1,.result-title {font-family:'Space Grotesk',sans-serif;color:var(--heading-color)}
+.hero h1 {font-size:clamp(2rem,4vw,3.2rem);line-height:1.05;margin:10px 0}
+.hero p,.muted,.result-detail {color:var(--muted-color)}
+.metric-card {padding:18px 20px;border-radius:18px;min-height:112px;background:var(--card-background);border:1px solid var(--card-border)}
+.metric-label {color:var(--label-color);font-size:.8rem;margin-bottom:8px}
+.metric-value {color:var(--heading-color);font-family:'Space Grotesk',sans-serif;font-size:1.7rem;font-weight:700}
+.metric-note {color:var(--accent-color);font-size:.76rem;margin-top:5px}
+.section-title {font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;color:var(--heading-color);margin:8px 0 4px}
+.result-box {border-radius:20px;padding:22px;margin-top:14px;background:var(--card-background);border:1px solid var(--card-border)}
+.result-title {margin:8px 0}
+.result-detail {margin:0}
+.result-score {font-size:2.5rem;margin:3px 0 8px;color:var(--heading-color)}
 .positive {border-left:5px solid #35d39a}.negative {border-left:5px solid #ff6b85}
-.small-pill {display:inline-block;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.08);color:#d9e4ff;font-size:.75rem;border:1px solid rgba(255,255,255,.10)}
+.small-pill {display:inline-block;padding:5px 10px;border-radius:999px;background:var(--pill-background);color:var(--pill-color);font-size:.75rem;border:1px solid var(--card-border)}
 div.stButton>button[kind="primary"],button[kind="primaryFormSubmit"] {border:0;border-radius:12px;min-height:2.9rem;background:linear-gradient(90deg,#6558f5,#258cda);color:white;font-weight:700}
-[data-testid="stMetric"] {background:rgba(255,255,255,.045);padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px}
-hr {border-color:rgba(255,255,255,.10)}
+[data-testid="stMetric"] {background:var(--metric-background);padding:14px;border:1px solid var(--card-border);border-radius:16px}
+.app-footer {text-align:center;color:var(--footer-color);font-size:.8rem;padding:6px 0 18px}
+hr {border-color:var(--card-border)}
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,7 +133,7 @@ if page == "Dashboard":
         result = st.session_state.last_result
         if result:
             good = result["label"] == "POSITIVE"
-            st.markdown(f"""<div class="result-box {'positive' if good else 'negative'}"><div class="eyebrow">Latest result</div><h2 style="color:#fff;margin:8px 0">{'😊 Positive sentiment' if good else '🙁 Negative sentiment'}</h2><p style="color:#bfcbe5;margin:0">Model confidence score</p><h1 style="font-size:2.5rem;margin:3px 0 8px;color:#fff">{result['score']*100:.2f}%</h1><span class="small-pill">Inference time: {result['seconds']:.3f}s</span></div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="result-box {'positive' if good else 'negative'}"><div class="eyebrow">Latest result</div><h2 class="result-title">{'😊 Positive sentiment' if good else '🙁 Negative sentiment'}</h2><p class="result-detail">Model confidence score</p><h1 class="result-score">{result['score']*100:.2f}%</h1><span class="small-pill">Inference time: {result['seconds']:.3f}s</span></div>""", unsafe_allow_html=True)
             st.caption("Confidence is the model's score for its predicted class, not a guarantee of correctness.")
     with right:
         st.markdown('<div class="section-title">📊 Session insights</div>', unsafe_allow_html=True)
@@ -356,4 +383,4 @@ else:
     st.info("For a formal project report, evaluate on a labelled held-out dataset and report accuracy, precision, recall, F1-score, and a confusion matrix.")
 
 st.markdown("---")
-st.markdown('<div style="text-align:center;color:#7785a8;font-size:.8rem;padding:6px 0 18px">SENTIMENT AI · Deep Learning Project · Streamlit + DistilBERT</div>', unsafe_allow_html=True)
+st.markdown('<div class="app-footer">SENTIMENT AI · Deep Learning Project · Streamlit + DistilBERT</div>', unsafe_allow_html=True)
